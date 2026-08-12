@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>چک‌لیست جامع بازسازی | ۳۰ سوال</title>
+    <style>
+        :root {
+            --bg: #0a0e14; --surface: #141b22; --surface2: #1a222d;
+            --gold: #d4a853; --teal: #2ec4b6; --text: #e0dcd0; --text-muted: #9a9588;
+            --border: #2a303a; --radius:16px; --radius-sm:10px;
+            --font: 'Segoe UI', 'Vazirmatn', system-ui, sans-serif;
+        }
+        [data-theme="light"] {
+            --bg: #f5f2eb; --surface: #ffffff; --surface2: #fafaf7;
+            --gold: #b8860b; --teal: #1a8a7d; --text: #2c2416; --text-muted: #6b6050; --border: #d9d3c7;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: var(--font); background: var(--bg); color: var(--text); transition:0.4s; }
+        .navbar { background: var(--surface2); border-bottom:1px solid var(--border); padding:0.8rem 1.8rem; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+        .logo { font-size:1.4rem; font-weight:800; color:var(--gold); text-decoration:none; }
+        .nav-actions { display:flex; gap:0.8rem; align-items:center; }
+        .btn { padding:0.5rem 1.2rem; border-radius:50px; border:none; cursor:pointer; font-family:var(--font); font-weight:600; font-size:0.85rem; transition:0.3s; }
+        .btn-teal { background:var(--teal); color:#fff; }
+        .btn-outline { background:transparent; border:2px solid var(--border); color:var(--text); }
+        .btn-outline:hover { border-color:var(--gold); }
+        .theme-toggle { width:40px; height:40px; border-radius:50%; background:var(--surface); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.2rem; }
+        .container { max-width:900px; margin:2rem auto; padding:0 1.5rem; }
+        .progress { height:6px; background:var(--border); border-radius:50px; margin:1rem 0 2rem; }
+        .progress-fill { height:100%; background:linear-gradient(90deg, var(--teal), var(--gold)); border-radius:50px; width:0%; transition:0.4s; }
+        .question-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1.5rem; }
+        .q-number { display:inline-block; background:var(--gold); color:#1a1408; width:28px; height:28px; border-radius:50%; text-align:center; line-height:28px; font-weight:700; margin-bottom:0.5rem; }
+        textarea { width:100%; padding:0.8rem; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface2); color:var(--text); font-family:var(--font); resize:vertical; min-height:100px; }
+        textarea:focus { outline:none; border-color:var(--teal); }
+        @media print { .no-print, .navbar, .btn, .theme-toggle, .nav-actions, .stage-selector, .footer-actions { display:none; } body { background:white; color:black; } textarea { border:1px solid #aaa; background:#fff; color:#000; } }
+        .save-indicator { font-size:0.8rem; color:var(--teal); opacity:0; transition:0.3s; }
+        .save-indicator.show { opacity:1; }
+        .footer-actions { display:flex; justify-content:center; gap:1rem; margin-top:2rem; }
+        select { padding:0.5rem 1rem; border-radius:50px; background:var(--surface); border:2px solid var(--border); color:var(--text); font-family:var(--font); font-weight:600; }
+    </style>
+</head>
+<body>
+    <nav class="navbar no-print">
+        <a class="logo" href="main.html">🛣️ نقشه راه مالی</a>
+        <div class="nav-actions">
+            <div class="stage-selector">
+                <select onchange="if(this.value) window.location.href=this.value;">
+    <option value="main.html">🏠 داشبورد اصلی</option>
+    <option value="module1.html">💡 ایده‌پردازی</option>
+    <option value="module2.html">🚀 استارتاپ</option>
+    <option value="module3.html">📈 رشد اولیه</option>
+    <option value="module4.html">🏗️ توسعه</option>
+    <option value="module5.html">🏛️ بلوغ</option>
+    <option value="module6.html" selected>🔄 بازسازی</option>
+</select>
+            </div>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+            <button class="btn btn-outline btn-sm" onclick="window.location.href='main.html'">🏠 بازگشت</button>
+        </div>
+    </nav>
+    <main class="container">
+        <h1 style="text-align:center; color:var(--gold);">🔄 چک‌لیست بازسازی</h1>
+        <p style="text-align:center; color:var(--text-muted);">۳۰ سوال برای احیای مالی و تغییر مسیر کسب‌وکار</p>
+        <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="save-indicator" id="saveIndicator">✔️ ذخیره شد</div>
+        <div id="questionsContainer"></div>
+        <div class="footer-actions no-print">
+            <button class="btn btn-teal" onclick="downloadPDF()">📥 دانلود PDF</button>
+            <button class="btn btn-outline" onclick="clearAll()">🗑️ پاک کردن همه</button>
+        </div>
+    </main>
+    <script>
+        const STORAGE_DETAILED = 'detailed_checklists';
+        const STORAGE_ANSWERS = 'restructure_answers';
+        const STAGE = 'restructure';
+
+        const defaultQuestions = [
+            {id:1,text:"چه عواملی باعث بحران مالی فعلی شده‌اند؟ (داخلی/خارجی)",hint:"علل ریشه‌ای را فهرست کنید."},
+            {id:2,text:"آخرین صورت‌های مالی حسابرسی‌شده چه وضعیتی را نشان می‌دهند؟",hint:"ارقام کلیدی: زیان، بدهی، نقدینگی."},
+            {id:3,text:"نسبت بدهی به حقوق صاحبان سهام (D/E) و نسبت پوشش بهره چقدر است؟",hint:"وضعیت بحرانی."},
+            {id:4,text:"کدام بخش‌ها یا محصولات زیان‌ده هستند و باید متوقف یا بازسازی شوند؟",hint:"تحلیل سودآوری."},
+            {id:5,text:"چه دارایی‌های غیرمولد یا مازادی برای فروش وجود دارد؟",hint:"لیست و ارزش تقریبی."},
+            {id:6,text:"آیا برنامه کاهش هزینه اضطراری تدوین شده است؟ اولویت‌ها کدامند؟",hint:"درصد کاهش هدف."},
+            {id:7,text:"با طلبکاران و بانک‌ها برای تجدید ساختار بدهی مذاکره کرده‌اید؟",hint:"نتایج و شرایط جدید."},
+            {id:8,text:"چه میزان نقدینگی فوری برای ادامه فعالیت نیاز است؟",hint:"مبلغ و مدت."},
+            {id:9,text:"منابع تأمین مالی اضطراری (وام، سرمایه‌گذار، فروش دارایی) کدامند؟",hint:"مبلغ قابل دسترس."},
+            {id:10,text:"آیا برنامه تعدیل نیروی انسانی (ضرورت و حجم) تدوین شده است؟",hint:"هزینه‌ها و پیامدها."},
+            {id:11,text:"چگونه می‌توان فرآیندهای عملیاتی را برای کاهش هزینه‌ها ساده‌سازی کرد؟",hint:"اتوماسیون، حذف دوباره‌کاری."},
+            {id:12,text:"آیا امکان تغییر تأمین‌کنندگان یا مذاکره مجدد قراردادها وجود دارد؟",hint:"صرفه‌جویی بالقوه."},
+            {id:13,text:"مشتریان کلیدی که بیشترین سودآوری را دارند کدامند؟",hint:"تحلیل ABC."},
+            {id:14,text:"آیا استراتژی قیمت‌گذاری نیاز به بازنگری دارد؟ (تخفیف، افزایش)",hint:"کشش قیمتی."},
+            {id:15,text:"مدل کسب‌وکار فعلی چه نقاط ضعف اساسی دارد؟",hint:"ارزش پیشنهادی، کانال‌ها."},
+            {id:16,text:"آیا pivot (تغییر جهت) به بازار یا محصول جدید ضروری است؟",hint:"گزینه‌ها."},
+            {id:17,text:"برنامه بازاریابی کم‌هزینه برای حفظ یا جذب مشتری چیست؟",hint:"دیجیتال، ارجاع."},
+            {id:18,text:"چرخه تبدیل نقدینگی (CCC) چقدر است و چگونه می‌توان آن را کوتاه کرد؟",hint:"وصول سریع‌تر، پرداخت دیرتر."},
+            {id:19,text:"آیا موجودی کالا یا مواد اولیه را می‌توان با تخفیف نقد کرد؟",hint:"مبلغ."},
+            {id:20,text:"چه دارایی‌های نامشهود (برند، پتنت) قابل فروش یا اجاره هستند؟",hint:"ارزش."},
+            {id:21,text:"آیا امکان ادغام (Merger) یا خرید توسط شرکت دیگر وجود دارد؟",hint:"مذاکرات."},
+            {id:22,text:"برنامه ارتباطی با ذی‌نفعان (کارکنان، مشتریان، سهامداران) چیست؟",hint:"شفاف‌سازی."},
+            {id:23,text:"چه شاخص‌های کلیدی بحران (KPI) را روزانه پایش می‌کنید؟",hint:"موجودی نقد، بدهی سررسیدشده."},
+            {id:24,text:"آیا تیم مدیریت بحران تشکیل شده است؟ اعضا و مسئولیت‌ها.",hint:"ساختار."},
+            {id:25,text:"برنامه ۹۰ روزه خروج از بحران چیست؟ (مهم‌ترین اقدامات)",hint:"اولویت‌های فوری."},
+            {id:26,text:"چگونه از تجربیات شکست برای بازسازی فرهنگ سازمانی استفاده می‌کنید؟",hint:"درس‌آموخته‌ها."},
+            {id:27,text:"آیا مشاور یا متخصص بازسازی مالی استخدام کرده‌اید؟",hint:"نام و نقش."},
+            {id:28,text:"پیش‌بینی جریان نقدی ۶ ماه آینده با سناریو بدبینانه چیست؟",hint:"مبلغ."},
+            {id:29,text:"در صورت عدم موفقیت بازسازی، برنامه جایگزین (Plan B) چیست؟",hint:"انحلال، واگذاری."},
+            {id:30,text:"مهم‌ترین اولویت اخلاقی و انسانی شما در این فرآیند چیست؟",hint:"تعهد به کارکنان، مشتریان."}
+        ];
+
+        let questions = [];
+        let answers = {};
+
+        function loadQuestions() {
+            const saved = localStorage.getItem(STORAGE_DETAILED);
+            if (saved) {
+                try {
+                    const detailed = JSON.parse(saved);
+                    if (detailed[STAGE] && detailed[STAGE].length >= 30) return detailed[STAGE];
+                } catch(e) {}
+            }
+            return defaultQuestions;
+        }
+
+        function loadAnswers() {
+            const saved = localStorage.getItem(STORAGE_ANSWERS);
+            if (saved) try { answers = JSON.parse(saved); } catch(e) { answers = {}; }
+        }
+
+        function saveAnswers() {
+            localStorage.setItem(STORAGE_ANSWERS, JSON.stringify(answers));
+            document.getElementById('saveIndicator').classList.add('show');
+            setTimeout(() => document.getElementById('saveIndicator').classList.remove('show'), 1500);
+        }
+
+        function updateProgress() {
+            const answered = Object.values(answers).filter(v => v && v.trim()).length;
+            document.getElementById('progressFill').style.width = (answered / questions.length * 100) + '%';
+        }
+
+        function renderQuestions() {
+            document.getElementById('questionsContainer').innerHTML = questions.map(q => `
+                <div class="question-card">
+                    <div class="q-number">${q.id}</div>
+                    <strong>${q.text}</strong>
+                    <p style="color:var(--text-muted); font-size:0.85rem; margin:0.3rem 0;">${q.hint||''}</p>
+                    <textarea id="ans-${q.id}" oninput="saveAnswer(${q.id}, this.value)">${answers[q.id]||''}</textarea>
+                </div>
+            `).join('');
+            updateProgress();
+        }
+
+        function saveAnswer(id, value) {
+            answers[id] = value;
+            clearTimeout(window._saveTimeout);
+            window._saveTimeout = setTimeout(() => { saveAnswers(); updateProgress(); }, 800);
+        }
+
+        function clearAll() {
+            if (confirm('همه پاسخ‌ها پاک شوند؟')) { answers = {}; localStorage.removeItem(STORAGE_ANSWERS); renderQuestions(); updateProgress(); }
+        }
+
+        function downloadPDF() { saveAnswers(); window.print(); }
+
+        function applyTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            document.getElementById('themeToggle').textContent = t === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem('app_theme', t);
+        }
+        function toggleTheme() { applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+
+        questions = loadQuestions();
+        loadAnswers();
+        renderQuestions();
+        applyTheme(localStorage.getItem('app_theme') || 'dark');
+    </script>
+</body>
+</html>

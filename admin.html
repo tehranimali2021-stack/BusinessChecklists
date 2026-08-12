@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل مدیریت | نقشه راه مالی</title>
+    <style>
+        :root {
+            --bg: #0a0e14; --surface: #141b22; --surface2: #1a222d;
+            --gold: #d4a853; --teal: #2ec4b6; --red: #e85d75;
+            --text: #e0dcd0; --text-muted: #9a9588; --border: #2a303a;
+            --radius:16px; --radius-sm:10px;
+            --font: 'Segoe UI', 'Vazirmatn', sans-serif;
+        }
+        [data-theme="light"] {
+            --bg: #f5f2eb; --surface: #ffffff; --surface2: #fafaf7;
+            --gold: #b8860b; --teal: #1a8a7d; --red: #c0392b;
+            --text: #2c2416; --text-muted: #6b6050; --border: #d9d3c7;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: var(--font); background: var(--bg); color: var(--text); display:flex; align-items:center; justify-content:center; min-height:100vh; }
+        .admin-container { background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:2rem; max-width:950px; width:95%; box-shadow:0 20px 50px rgba(0,0,0,0.4); }
+        .hidden { display:none !important; }
+        h2 { color:var(--gold); margin-bottom:1rem; }
+        .tabs { display:flex; gap:0.3rem; margin-bottom:1.5rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem; flex-wrap:wrap; }
+        .tab { padding:0.5rem 1rem; border-radius:50px; cursor:pointer; border:1px solid transparent; background:transparent; color:var(--text-muted); font-family:var(--font); font-weight:600; }
+        .tab.active { background:rgba(212,168,83,0.15); color:var(--gold); border-color:var(--gold); }
+        .btn { padding:0.5rem 1.2rem; border-radius:50px; border:none; cursor:pointer; font-family:var(--font); font-weight:600; }
+        .btn-teal { background:var(--teal); color:#fff; }
+        .btn-outline { background:transparent; border:2px solid var(--border); color:var(--text); }
+        .btn-danger { background:var(--red); color:#fff; }
+        input,textarea,select { width:100%; padding:0.7rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-family:var(--font); margin-bottom:0.8rem; }
+        .step-editor { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; margin-bottom:0.4rem; }
+        .step-editor input { flex:1; min-width:100px; margin-bottom:0; }
+        .toast { position:fixed; bottom:2rem; right:2rem; background:var(--teal); color:#fff; padding:0.7rem 1.4rem; border-radius:50px; z-index:999; animation:slideIn 0.4s; }
+        @keyframes slideIn { from{transform:translateX(120%);} to{transform:translateX(0);} }
+        .case-item { display:flex; justify-content:space-between; align-items:center; background:var(--surface); padding:0.8rem 1rem; border-radius:8px; margin-bottom:0.5rem; border:1px solid var(--border); }
+    </style>
+</head>
+<body>
+    <div id="loginPanel" class="admin-container">
+        <h2 style="text-align:center;">🔐 ورود مدیریت</h2>
+        <input type="password" id="passwordInput" placeholder="رمز عبور" style="text-align:center; font-size:1.1rem;">
+        <button class="btn btn-teal" style="width:100%;" onclick="login()">ورود</button>
+    </div>
+
+    <div id="adminPanel" class="admin-container hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+            <h2>⚙️ مدیریت</h2>
+            <button class="btn btn-teal" onclick="downloadUpdate()">📥 دانلود update.js</button>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('modules')">ماژول‌ها</button>
+            <button class="tab" onclick="switchTab('diagnostic')">چک‌لیست تشخیص</button>
+            <button class="tab" onclick="switchTab('detailed')">چک‌لیست‌های تشریحی</button>
+            <button class="tab" onclick="switchTab('case')">📚 مطالعات موردی</button>
+            <button class="tab" onclick="switchTab('password')">رمز عبور</button>
+        </div>
+        <div id="tabContent"></div>
+        <div style="margin-top:1.5rem; display:flex; justify-content:flex-end; gap:0.5rem;">
+            <button class="btn btn-teal" onclick="saveAllChanges()">💾 ذخیره</button>
+            <button class="btn btn-outline" onclick="location.reload()">خروج</button>
+        </div>
+    </div>
+    <div id="toastContainer"></div>
+
+    <script>
+        const STORAGE_MODULES = 'roadmap_modules';
+        const STORAGE_DIAGNOSTIC = 'diagnostic_checklist';
+        const STORAGE_DETAILED = 'detailed_checklists';
+        const STORAGE_PASSWORD = 'admin_password';
+        const STORAGE_CASE = 'case_studies';
+        const DEFAULT_PASSWORD = 'admin123';
+
+        let modules=[],diag=[],detailed={};
+        let currentTab='modules';
+        let editingCaseId = null;
+        let editingCaseTitle = '', editingCaseBusiness = '', editingCaseProblem = '', editingCaseSolution = '';
+
+        function loadAll(){
+            modules=JSON.parse(localStorage.getItem(STORAGE_MODULES))||defaultModules();
+            diag=JSON.parse(localStorage.getItem(STORAGE_DIAGNOSTIC))||defaultDiagnostic();
+            detailed=JSON.parse(localStorage.getItem(STORAGE_DETAILED))||defaultDetailed();
+        }
+        function saveAll(){
+            localStorage.setItem(STORAGE_MODULES,JSON.stringify(modules));
+            localStorage.setItem(STORAGE_DIAGNOSTIC,JSON.stringify(diag));
+            localStorage.setItem(STORAGE_DETAILED,JSON.stringify(detailed));
+        }
+        function defaultModules(){ return [
+            {id:'ideation',title:'ایده‌پردازی',emoji:'💡',time:'۲-۴ هفته',steps:7,checklistUrl:'module1.html',stepsList:['...'],description:'...'},
+            {id:'startup',title:'استارتاپ',emoji:'🚀',time:'۱-۳ ماه',steps:8,checklistUrl:'module2.html',stepsList:['...'],description:'...'},
+            {id:'growth',title:'رشد اولیه',emoji:'📈',time:'۳-۶ ماه',steps:8,checklistUrl:'module3.html',stepsList:['...'],description:'...'},
+            {id:'expansion',title:'توسعه',emoji:'🏗️',time:'۶-۱۲ ماه',steps:8,checklistUrl:'module4.html',stepsList:['...'],description:'...'},
+            {id:'maturity',title:'بلوغ',emoji:'🏛️',time:'مداوم',steps:8,checklistUrl:'module5.html',stepsList:['...'],description:'...'},
+            {id:'restructure',title:'بازسازی',emoji:'🔄',time:'۳-۹ ماه',steps:8,checklistUrl:'module6.html',stepsList:['...'],description:'...'}
+        ];}
+        function defaultDiagnostic(){ return [
+            {id:'q1',text:'وضعیت ثبت',options:[{label:'ثبت نشده',value:'ideation',weight:3},{label:'تازه ثبت شده',value:'startup',weight:3},{label:'چند سال',value:'maturity',weight:1}]},
+            {id:'q2',text:'تعداد کارکنان',options:[{label:'فقط خودم',value:'ideation',weight:2},{label:'۱-۵',value:'startup',weight:3},{label:'۶-۲۰',value:'growth',weight:2},{label:'۲۰-۵۰',value:'expansion',weight:2},{label:'+۵۰',value:'maturity',weight:2}]},
+            {id:'q3',text:'درآمد',options:[{label:'بدون درآمد',value:'ideation',weight:3},{label:'ناپایدار',value:'startup',weight:3},{label:'منظم',value:'growth',weight:2},{label:'بالا',value:'maturity',weight:1},{label:'کاهشی/بحران',value:'restructure',weight:4}]}
+        ];}
+        function defaultDetailed(){ return {
+            ideation: [ {id:1,text:"مسئله یا نیاز؟",hint:"..."}, {id:2,text:"راه‌حل؟",hint:"..."}, {id:3,text:"مشتریان هدف؟",hint:"..."} ],
+            startup: [ {id:1,text:"ثبت شرکت",hint:"..."}, {id:2,text:"حساب بانکی",hint:"..."}, {id:3,text:"حسابداری",hint:"..."} ],
+            growth: [ {id:1,text:"رشد درآمد",hint:"..."}, {id:2,text:"نرخ بازگشت",hint:"..."}, {id:3,text:"CAC",hint:"..."} ],
+            expansion: [ {id:1,text:"بازارهای جدید",hint:"..."}, {id:2,text:"سرمایه‌گذاری",hint:"..."}, {id:3,text:"ERP",hint:"..."} ],
+            maturity: [ {id:1,text:"حاشیه سود",hint:"..."}, {id:2,text:"ROA/ROE",hint:"..."}, {id:3,text:"بهینه‌سازی",hint:"..."} ],
+            restructure: [ {id:1,text:"عوامل بحران",hint:"..."}, {id:2,text:"صورت‌های مالی",hint:"..."}, {id:3,text:"نسبت بدهی",hint:"..."} ]
+        };}
+
+        function showToast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.getElementById('toastContainer').appendChild(t);setTimeout(()=>t.remove(),2500);}
+        function login(){if(document.getElementById('passwordInput').value===(localStorage.getItem(STORAGE_PASSWORD)||DEFAULT_PASSWORD)){document.getElementById('loginPanel').classList.add('hidden');document.getElementById('adminPanel').classList.remove('hidden');loadAll();switchTab('modules');}else showToast('❌ رمز اشتباه');}
+
+        function switchTab(tab){
+            currentTab=tab;
+            document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['modules','diagnostic','detailed','case','password'][i]===tab));
+            const c=document.getElementById('tabContent');
+            if(tab==='modules'){
+                c.innerHTML=`<div style="display:flex; gap:0.5rem;"><select id="modSelect" onchange="editModule()">${modules.map(m=>`<option value="${m.id}">${m.emoji||''} ${m.title}</option>`).join('')}</select><button class="btn btn-outline btn-sm" onclick="addModule()">➕ جدید</button></div><div id="modEditor"></div>`;
+                editModule();
+            }else if(tab==='diagnostic'){
+                c.innerHTML=`<div id="diagEditor">${diag.map((q,qi)=>`<div style="background:var(--surface); padding:1rem; margin-bottom:0.5rem; border-radius:8px;"><input value="${q.text}" data-qid="${q.id}" data-field="text">${q.options.map((o,oi)=>`<div class="step-editor"><input value="${o.label}" data-qid="${q.id}" data-oidx="${oi}" data-field="label"><input value="${o.value}" data-qid="${q.id}" data-oidx="${oi}" data-field="value"><input type="number" value="${o.weight}" data-qid="${q.id}" data-oidx="${oi}" data-field="weight" style="width:70px;"><button class="btn btn-danger btn-sm" onclick="deleteDiagOption('${q.id}',${oi})">✕</button></div>`).join('')}<button class="btn btn-outline btn-sm" onclick="addDiagOption('${q.id}')">➕ گزینه</button></div>`).join('')}</div><button class="btn btn-outline" onclick="addDiagQuestion()">➕ سوال</button>`;
+            }else if(tab==='detailed'){
+                const stages=modules.map(m=>m.id);
+                c.innerHTML=`<select id="detailStage" onchange="renderDetailEdit()">${stages.map(s=>`<option value="${s}">${modules.find(m=>m.id===s)?.title||s}</option>`).join('')}</select><div id="detailEditor"></div><button class="btn btn-outline" onclick="addDetailQuestion()">➕ سوال</button>`;
+                renderDetailEdit();
+            }else if(tab==='case'){
+                c.innerHTML = `
+                    <div id="caseList" style="margin-bottom:1rem;"></div>
+                    <hr style="border-color:var(--border); margin:1.5rem 0;">
+                    <h4 style="color:var(--gold);">${editingCaseId ? '✏️ ویرایش' : '➕ افزودن'} مطالعه جدید</h4>
+                    <input id="caseTitle" placeholder="عنوان (نام شخص یا کسب‌وکار)" value="${editingCaseTitle}">
+                    <input id="caseBusiness" placeholder="کسب‌وکار" value="${editingCaseBusiness}">
+                    <textarea id="caseProblem" placeholder="مشکل" rows="2">${editingCaseProblem}</textarea>
+                    <textarea id="caseSolution" placeholder="راه‌حل" rows="2">${editingCaseSolution}</textarea>
+                    <button class="btn btn-teal" onclick="saveCase()">💾 ذخیره</button>
+                    ${editingCaseId ? `<button class="btn btn-outline" onclick="cancelEditCase()">لغو</button>` : ''}
+                `;
+                renderCaseList();
+            }else if(tab==='password'){
+                c.innerHTML=`<input id="newPass" value="${localStorage.getItem(STORAGE_PASSWORD)||DEFAULT_PASSWORD}"><button class="btn btn-teal" onclick="changePass()">ذخیره</button>`;
+            }
+        }
+
+        // ====== MODULES ======
+        function editModule(){
+            const id=document.getElementById('modSelect')?.value; if(!id)return;
+            const mod=modules.find(m=>m.id===id);
+            document.getElementById('modEditor').innerHTML=`<input id="editTitle" value="${mod.title}"><input id="editUrl" value="${mod.checklistUrl||'#'}"><textarea id="editStepsList">${(mod.stepsList||[]).join('\n')}</textarea><button class="btn btn-teal btn-sm" onclick="saveModule('${id}')">ذخیره</button><button class="btn btn-danger btn-sm" onclick="deleteModule('${id}')">حذف</button>`;
+        }
+        function saveModule(id){
+            const m=modules.find(x=>x.id===id);
+            m.title=document.getElementById('editTitle').value;
+            m.checklistUrl=document.getElementById('editUrl').value;
+            m.stepsList=document.getElementById('editStepsList').value.split('\n').filter(s=>s.trim());
+            saveAll();showToast('✅ ذخیره شد');switchTab('modules');
+        }
+        function addModule(){ modules.push({id:'mod-'+Date.now(),title:'جدید',emoji:'🆕',time:'?',steps:1,checklistUrl:'#',stepsList:[],description:''}); saveAll();switchTab('modules'); }
+        function deleteModule(id){if(confirm('حذف؟')){modules=modules.filter(m=>m.id!==id);saveAll();switchTab('modules');}}
+
+        // ====== DIAGNOSTIC ======
+        function saveDiagFromEditor(){
+            const newDiag=[];
+            document.querySelectorAll('#diagEditor>div').forEach(div=>{
+                const text=div.querySelector('input[data-field="text"]')?.value;
+                const qid=div.querySelector('input[data-field="text"]')?.dataset.qid;
+                const opts=[];
+                div.querySelectorAll('.step-editor').forEach(item=>{
+                    opts.push({label:item.querySelector('input[data-field="label"]')?.value, value:item.querySelector('input[data-field="value"]')?.value, weight:parseInt(item.querySelector('input[data-field="weight"]')?.value||'1')});
+                });
+                if(qid)newDiag.push({id:qid,text,options:opts});
+            });
+            diag=newDiag;saveAll();
+        }
+        function addDiagOption(qid){const q=diag.find(x=>x.id===qid);if(q){q.options.push({label:'جدید',value:'startup',weight:1});saveAll();switchTab('diagnostic');}}
+        function deleteDiagOption(qid,oi){const q=diag.find(x=>x.id===qid);if(q&&q.options.length>1){q.options.splice(oi,1);saveAll();switchTab('diagnostic');}else showToast('حداقل یک گزینه');}
+        function addDiagQuestion(){diag.push({id:'q-'+Date.now(),text:'سوال',options:[{label:'گزینه',value:'startup',weight:2}]});saveAll();switchTab('diagnostic');}
+
+        // ====== DETAILED ======
+        function renderDetailEdit(){
+            const stage=document.getElementById('detailStage')?.value||'ideation';
+            const qs=detailed[stage]||[];
+            document.getElementById('detailEditor').innerHTML=qs.map((q,qi)=>`<div style="background:var(--surface); padding:0.8rem; margin-bottom:0.3rem;"><input value="${q.text}" data-qid="${q.id}" data-field="text"><input value="${q.hint||''}" data-qid="${q.id}" data-field="hint"><button class="btn btn-danger btn-sm" onclick="deleteDetailQuestion('${stage}',${qi})">حذف</button></div>`).join('');
+        }
+        function saveDetailFromEditor(){
+            const stage=document.getElementById('detailStage')?.value; if(!stage)return;
+            const qs=[];
+            document.querySelectorAll('#detailEditor>div').forEach(div=>{
+                const text=div.querySelector('input[data-field="text"]')?.value;
+                const hint=div.querySelector('input[data-field="hint"]')?.value;
+                const qid=div.querySelector('input[data-field="text"]')?.dataset.qid;
+                if(text)qs.push({id:parseInt(qid)||Date.now(),text,hint});
+            });
+            detailed[stage]=qs;saveAll();
+        }
+        function addDetailQuestion(){
+            const stage=document.getElementById('detailStage')?.value; if(!stage)return;
+            if(!detailed[stage])detailed[stage]=[];
+            detailed[stage].push({id:Date.now(),text:'سوال جدید',hint:''});
+            saveAll();renderDetailEdit();
+        }
+        function deleteDetailQuestion(stage,idx){
+            if(detailed[stage]&&detailed[stage].length>1){detailed[stage].splice(idx,1);saveAll();renderDetailEdit();}else showToast('حداقل یک سوال');
+        }
+
+        // ====== CASE STUDIES ======
+        function getCases(){ return JSON.parse(localStorage.getItem(STORAGE_CASE))||[]; }
+        function saveCases(arr){ localStorage.setItem(STORAGE_CASE, JSON.stringify(arr)); }
+
+        function renderCaseList(){
+            const cases = getCases();
+            document.getElementById('caseList').innerHTML = cases.map(c => `
+                <div class="case-item">
+                    <div><strong>${c.title}</strong> – ${c.business}</div>
+                    <div>
+                        <button class="btn btn-outline btn-sm" onclick="editCase('${c.id}')">✏️</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteCase('${c.id}')">🗑️</button>
+                    </div>
+                </div>
+            `).join('') || '<p style="color:var(--text-muted);">هیچ مطالعه‌ای ثبت نشده است.</p>';
+        }
+
+        function editCase(id){
+            const cases = getCases();
+            const item = cases.find(c => c.id == id);
+            if(!item) return;
+            editingCaseId = item.id;
+            editingCaseTitle = item.title;
+            editingCaseBusiness = item.business;
+            editingCaseProblem = item.problem;
+            editingCaseSolution = item.solution;
+            switchTab('case');
+        }
+
+        function cancelEditCase(){
+            editingCaseId = null;
+            editingCaseTitle = editingCaseBusiness = editingCaseProblem = editingCaseSolution = '';
+            switchTab('case');
+        }
+
+        function deleteCase(id){
+            if(!confirm('آیا این مطالعه حذف شود؟')) return;
+            let cases = getCases();
+            cases = cases.filter(c => c.id != id);
+            saveCases(cases);
+            if(editingCaseId == id) cancelEditCase();
+            else renderCaseList();
+        }
+
+        function saveCase(){
+            const title = document.getElementById('caseTitle').value.trim();
+            const business = document.getElementById('caseBusiness').value.trim();
+            const problem = document.getElementById('caseProblem').value.trim();
+            const solution = document.getElementById('caseSolution').value.trim();
+            if(!title || !business || !problem || !solution){
+                showToast('❌ همه فیلدها باید پر شوند');
+                return;
+            }
+            let cases = getCases();
+            if(editingCaseId){
+                const idx = cases.findIndex(c => c.id == editingCaseId);
+                if(idx > -1){
+                    cases[idx] = { id: editingCaseId, title, business, problem, solution };
+                }
+                editingCaseId = null;
+                editingCaseTitle = editingCaseBusiness = editingCaseProblem = editingCaseSolution = '';
+            } else {
+                cases.push({ id: Date.now() + '', title, business, problem, solution });
+            }
+            saveCases(cases);
+            showToast('✅ مطالعه ذخیره شد');
+            switchTab('case');
+        }
+
+        // ====== GENERAL ======
+        function saveAllChanges(){
+            if(currentTab==='modules') saveModule(document.getElementById('modSelect')?.value);
+            else if(currentTab==='diagnostic') saveDiagFromEditor();
+            else if(currentTab==='detailed') saveDetailFromEditor();
+            else if(currentTab==='case') {
+                // اگر کاربر در تب case باشد و فرم را پر کرده باشد، saveCase قبلاً انجام شده
+                // اما برای اطمینان، می‌توانیم دوباره ذخیره کنیم (در صورت وجود فیلدها)
+                const title = document.getElementById('caseTitle')?.value?.trim();
+                if(title) saveCase();
+            }
+            saveAll();showToast('💾 ذخیره شد');
+        }
+        function changePass(){ localStorage.setItem(STORAGE_PASSWORD,document.getElementById('newPass')?.value); showToast('🔑 رمز تغییر کرد'); }
+        function downloadUpdate(){
+            saveAllChanges();
+            const js=`localStorage.setItem('${STORAGE_MODULES}','${JSON.stringify(modules).replace(/'/g,"\\'")}');\nlocalStorage.setItem('${STORAGE_DIAGNOSTIC}','${JSON.stringify(diag).replace(/'/g,"\\'")}');\nlocalStorage.setItem('${STORAGE_DETAILED}','${JSON.stringify(detailed).replace(/'/g,"\\'")}');\nlocalStorage.setItem('${STORAGE_CASE}','${JSON.stringify(getCases()).replace(/'/g,"\\'")}');`;
+            const blob=new Blob([js],{type:'application/javascript'});
+            const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='update.js';a.click();
+            showToast('📥 update.js دانلود شد');
+        }
+    </script>
+</body>
+</html>

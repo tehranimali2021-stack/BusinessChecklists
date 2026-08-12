@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نقشه راه ساختار مالی | مسیر مالی خود را بسازید</title>
+    <style>
+        :root {
+            --bg: #0a0e14; --surface: rgba(20,27,34,0.85); --surface2: rgba(26,34,45,0.9);
+            --gold: #d4a853; --gold-light: #f0d078; --teal: #2ec4b6;
+            --red: #e85d75; --text: #e0dcd0; --text-muted: #9a9588;
+            --border: rgba(42,48,58,0.7); --radius: 20px; --radius-sm: 12px;
+            --font: 'Segoe UI', 'Vazirmatn', system-ui, sans-serif;
+            --glass-bg: rgba(20,27,34,0.6); --glass-border: rgba(255,255,255,0.08);
+            --shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.5);
+            --shadow-card: 0 10px 30px rgba(0,0,0,0.4);
+            --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        [data-theme="light"] {
+            --bg: #f7f5f0; --surface: rgba(255,255,255,0.8); --surface2: rgba(250,250,247,0.9);
+            --gold: #b8860b; --teal: #1a8a7d; --red: #c0392b;
+            --text: #2c2416; --text-muted: #6b6050; --border: rgba(217,211,199,0.8);
+            --glass-bg: rgba(255,255,255,0.6); --glass-border: rgba(0,0,0,0.08);
+            --shadow-lg: 0 25px 50px rgba(0,0,0,0.1);
+            --shadow-card: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: var(--font); background: var(--bg); color: var(--text);
+            transition: background 0.5s, color 0.5s; overflow-x:hidden;
+            background-image: radial-gradient(circle at 30% 10%, rgba(212,168,83,0.03) 0%, transparent 50%);
+        }
+        #particles-canvas { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:0.4; }
+        .navbar {
+            background: var(--glass-bg); backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border);
+            padding: 0.8rem 1.8rem; display:flex; align-items:center; justify-content:space-between;
+            position:sticky; top:0; z-index:100; transition: 0.3s;
+        }
+        .logo { font-size:1.4rem; font-weight:800; color:var(--gold); text-decoration:none; display:flex; align-items:center; gap:0.4rem; }
+        .btn {
+            padding:0.6rem 1.5rem; border-radius:50px; font-weight:600; font-size:0.9rem;
+            border:none; cursor:pointer; font-family:var(--font); transition: var(--transition);
+            display:inline-flex; align-items:center; gap:0.5rem; text-decoration:none;
+        }
+        .btn-teal { background: var(--teal); color:#fff; box-shadow: 0 8px 20px rgba(46,196,182,0.3); }
+        .btn-teal:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(46,196,182,0.4); }
+        .btn-outline { background: transparent; border:2px solid var(--border); color:var(--text); }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+        .theme-toggle { width:44px; height:44px; border-radius:50%; background:var(--surface); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.3rem; }
+        .container { max-width:1200px; margin:0 auto; padding:0 1.5rem; }
+        .hero {
+            text-align:center; padding:5rem 1rem 3rem; position:relative; z-index:1;
+        }
+        .hero h1 {
+            font-size:3.2rem; font-weight:900; line-height:1.2;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold), #fff3cd);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:1.5rem;
+        }
+        .hero p { font-size:1.2rem; color:var(--text-muted); max-width:700px; margin:0 auto 2rem; }
+        .trust-badges { display:flex; justify-content:center; gap:1.5rem; flex-wrap:wrap; margin:2rem 0; }
+        .trust-badge {
+            display:flex; align-items:center; gap:0.6rem; background: var(--glass-bg);
+            padding:0.6rem 1.4rem; border-radius:50px; border:1px solid var(--glass-border);
+            font-size:0.9rem; backdrop-filter: blur(10px);
+        }
+        .counters { display:flex; justify-content:center; gap:2.5rem; flex-wrap:wrap; margin:2.5rem 0; }
+        .counter-item { text-align:center; }
+        .counter-number { font-size:2.8rem; font-weight:900; color:var(--gold); }
+        .counter-label { color:var(--text-muted); margin-top:0.2rem; }
+        .modules-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px,1fr)); gap:1.8rem; margin:3rem 0; }
+        .module-card {
+            background: var(--glass-bg); backdrop-filter: blur(15px); border:1px solid var(--glass-border);
+            border-radius: var(--radius); padding:2rem; transition: var(--transition);
+            cursor:pointer; position:relative; overflow:hidden;
+            box-shadow: var(--shadow-card);
+        }
+        .module-card:hover { transform: translateY(-8px); border-color: var(--gold); box-shadow: var(--shadow-lg); }
+        .module-card::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:3px;
+            background: linear-gradient(90deg, var(--gold), var(--teal)); opacity:0; transition:0.4s;
+        }
+        .module-card:hover::before { opacity:1; }
+        .module-emoji { font-size:2.5rem; }
+        .module-badge { display:inline-block; padding:0.3rem 1rem; border-radius:20px; font-size:0.8rem; font-weight:700; background:rgba(212,168,83,0.15); color:var(--gold); }
+        .module-title { font-size:1.3rem; font-weight:800; margin:0.8rem 0; }
+        .module-desc { color:var(--text-muted); font-size:0.95rem; margin-bottom:1.2rem; }
+        .module-meta { display:flex; gap:1.5rem; color:var(--text-muted); font-size:0.85rem; }
+        .module-actions { display:flex; gap:0.8rem; margin-top:1.5rem; flex-wrap:wrap; }
+        .checklist-btn { background:rgba(46,196,182,0.15); border:1px solid var(--teal); color:var(--teal); padding:0.5rem 1.2rem; border-radius:50px; font-size:0.8rem; font-weight:700; text-decoration:none; display:flex; align-items:center; gap:0.4rem; transition:0.3s; }
+        .checklist-btn:hover { background:var(--teal); color:#fff; }
+        .road-svg-container svg { width:100%; height:auto; max-width:1000px; margin:0 auto; display:block; }
+
+        /* Overlay */
+        .overlay {
+            position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px);
+            z-index:200; display:flex; align-items:center; justify-content:center;
+            padding:1.5rem; opacity:0; pointer-events:none; transition:0.4s;
+        }
+        .overlay.active { opacity:1; pointer-events:all; }
+        .overlay-card {
+            background:var(--surface2); border:1px solid var(--glass-border);
+            border-radius:var(--radius); padding:2.5rem 2rem 2rem;
+            max-width:90vw; width:800px; max-height:85vh; overflow-y:auto;
+            box-shadow:var(--shadow-lg); position: relative;
+        }
+        .close-btn {
+            position: absolute; top: 0.8rem; left: 0.8rem;
+            background: var(--surface); border: 2px solid var(--border);
+            color: var(--text); font-size: 1.4rem; width: 36px; height: 36px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: var(--transition); z-index: 10;
+        }
+        .close-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+        .back-to-top { position:fixed; bottom:2rem; left:2rem; width:50px; height:50px; border-radius:50%; background:var(--teal); color:#fff; border:none; cursor:pointer; font-size:1.5rem; box-shadow:0 10px 20px rgba(0,0,0,0.3); transition:0.3s; z-index:50; opacity:0; transform:translateY(20px); }
+        .back-to-top.show { opacity:1; transform:translateY(0); }
+
+        /* Diagnostic Options */
+        .option-pill {
+            padding:0.5rem 1rem; border-radius:20px; border:1px solid var(--border);
+            cursor:pointer; transition:0.2s; font-size:0.9rem; background:transparent;
+            color:var(--text);
+        }
+        .option-pill.selected { background:var(--teal); color:#fff; border-color:var(--teal); }
+        .result-box { background:var(--surface); border-radius:var(--radius-sm); padding:1.5rem; margin-top:1.5rem; }
+
+        /* Print only the result */
+        @media print {
+            body * { visibility: hidden; }
+            #diagnosticResult, #diagnosticResult * { visibility: visible; }
+            #diagnosticResult {
+                position: absolute; left: 0; top: 0; width: 100%; padding: 2rem;
+                background: #fff; color: #000;
+            }
+            #diagnosticResult .btn { display: none; }
+            #diagnosticOverlay { background: none; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles-canvas"></canvas>
+
+    <nav class="navbar">
+        <a class="logo" href="#">🛣️ نقشه راه مالی</a>
+        <div style="display:flex; gap:1rem; align-items:center;">
+            <button class="btn btn-outline" onclick="openDiagnostic()">📋 تشخیص مرحله</button>
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>مسیر مالی خود را<br>هوشمندانه طراحی کنید</h1>
+        <p>با تکمیل چک‌لیست رایگان، نقشه راه اختصاصی دریافت کنید و گام‌به‌گام به سلامت مالی برسید.</p>
+        <button class="btn btn-teal" onclick="openDiagnostic()" style="font-size:1.1rem; padding:0.9rem 2.2rem;">🎯 شروع رایگان</button>
+        <div class="trust-badges">
+            <div class="trust-badge"><span>🔒</span> محرمانه</div>
+            <div class="trust-badge"><span>⭐</span> +۵۰۰ کارآفرین</div>
+            <div class="trust-badge"><span>💬</span> پشتیبانی دائمی</div>
+        </div>
+    </section>
+
+    <div class="container counters">
+        <div class="counter-item"><div class="counter-number" data-target="1250">۰</div><div class="counter-label">کارآفرین موفق</div></div>
+        <div class="counter-item"><div class="counter-number" data-target="98">۰</div><div class="counter-label">درصد رضایت</div></div>
+        <div class="counter-item"><div class="counter-number" data-target="350">۰</div><div class="counter-label">نقشه‌راه تکمیل‌شده</div></div>
+        <div class="counter-item"><div class="counter-number" data-target="8">۰</div><div class="counter-label">سال تجربه</div></div>
+    </div>
+
+    <div class="container">
+        <h2 style="text-align:center; margin:3rem 0 1.5rem; color:var(--gold); font-size:2rem;">مراحل کسب‌وکار خود را انتخاب کنید</h2>
+        <p style="text-align:center; color:var(--text-muted); margin-bottom:2rem;">هر مرحله شامل زمان تخمینی و گام‌های اجرایی مشخص است</p>
+        <div class="modules-grid" id="modulesGrid"></div>
+    </div>
+
+    <!-- ====== CASE STUDIES ====== -->
+    <section style="max-width:900px; margin:3rem auto; padding:0 1.5rem;">
+        <h2 style="color:var(--gold); margin-bottom:1rem;">📚 مطالعات موردی</h2>
+        <div style="background:var(--surface); border-radius:var(--radius); padding:1.5rem; border:1px solid var(--border);">
+            <select id="caseSelect" style="width:100%; padding:0.7rem; border-radius:var(--radius-sm); background:var(--surface2); border:1px solid var(--border); color:var(--text); font-family:var(--font); font-size:1rem;" onchange="showCaseDetail()">
+                <option value="">— انتخاب کنید —</option>
+            </select>
+            <div id="caseDetail" style="margin-top:1.2rem; background:var(--surface2); border-radius:var(--radius-sm); padding:1rem; border:1px solid var(--border); min-height:100px;">
+                <p style="color:var(--text-muted);">جزئیات مطالعه در اینجا نمایش داده می‌شود.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="container" style="margin:4rem auto;">
+        <h2 style="text-align:center; color:var(--gold); margin-bottom:2rem;">❓ سوالات متداول</h2>
+        <div id="faqContainer"></div>
+    </div>
+
+    <footer style="background:var(--surface2); border-top:1px solid var(--glass-border); padding:2rem; text-align:center; color:var(--text-muted);">
+        <p>© ۱۴۰۴ نقشه راه ساختار مالی | طراحی شده برای کارآفرینان ایرانی</p>
+    </footer>
+
+    <button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+    <!-- Roadmap Overlay -->
+    <div class="overlay" id="roadmapOverlay" onclick="if(event.target===this) closeRoadmap()">
+        <div class="overlay-card">
+            <button class="close-btn" onclick="closeRoadmap()">✕</button>
+            <h2 id="roadmapTitle" style="color:var(--gold); margin-bottom:1rem; padding-left:2rem;"></h2>
+            <div class="road-svg-container" id="roadSvg"></div>
+        </div>
+    </div>
+
+    <!-- Diagnostic Overlay -->
+    <div class="overlay" id="diagnosticOverlay" onclick="if(event.target===this) closeDiagnostic()">
+        <div class="overlay-card">
+            <button class="close-btn" onclick="closeDiagnostic()">✕</button>
+            <h3 style="color:var(--gold); margin-bottom:1rem;" id="diagnosticTitle">کدام مرحله مناسب شماست؟</h3>
+            <div id="diagnosticQuestions"></div>
+            <button class="btn btn-teal" id="submitDiagnostic" disabled onclick="submitDiagnostic()" style="margin-top:1rem; width:100%;">🎯 تشخیص مرحله</button>
+            <div id="diagnosticResult" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script src="update.js"></script>
+    <script>
+        const STORAGE_MODULES = 'roadmap_modules';
+        const STORAGE_CHECKLIST = 'diagnostic_checklist';
+        const STORAGE_THEME = 'app_theme';
+
+        const defaultModules = [
+            {id:'ideation',title:'ایده‌پردازی',emoji:'💡',time:'۲-۴ هفته',steps:7,checklistUrl:'module1.html',
+             stepsList:['تعریف ایده','برآورد هزینه','تحلیل بازار','مشاوره مالی','ثبت اولیه','بودجه‌بندی','آموزش مالی'],
+             description:'شکل‌گیری ایده و آماده‌سازی اولیه'},
+            {id:'startup',title:'شروع و استارتاپ',emoji:'🚀',time:'۱-۳ ماه',steps:8,checklistUrl:'module2.html',
+             stepsList:['حساب تجاری','نرم‌افزار حسابداری','ثبت تراکنش‌ها','فاکتور رسمی','برنامه مالیاتی','صندوق اضطراری','KPI ساده','تأمین مالی'],
+             description:'راه‌اندازی و ایجاد ساختار پایه'},
+            {id:'growth',title:'رشد اولیه',emoji:'📈',time:'۳-۶ ماه',steps:8,checklistUrl:'module3.html',
+             stepsList:['ارتقا نرم‌افزار','استخدام حسابدار','بودجه‌بندی','پیش‌بینی نقدینگی','بهینه‌سازی هزینه','مدیریت بدهی','بیمه','گزارش‌دهی'],
+             description:'مقیاس‌پذیری و ساماندهی'},
+            {id:'expansion',title:'توسعه',emoji:'🏗️',time:'۶-۱۲ ماه',steps:8,checklistUrl:'module4.html',
+             stepsList:['ERP','تیم مالی','گزارش مدیریتی','چندشعبه','تأمین مالی','کنترل داخلی','ریسک ارزی','مالیات پیشرفته'],
+             description:'گسترش و ورود به بازارهای جدید'},
+            {id:'maturity',title:'بلوغ',emoji:'🏛️',time:'مداوم',steps:8,checklistUrl:'module5.html',
+             stepsList:['بهینه‌سازی','حسابرسی','سرمایه در گردش','تقسیم سود','قرارداد بلندمدت','پرتفوی','جانشین‌پروری','هیئت مدیره'],
+             description:'ثبات و سودآوری'},
+            {id:'restructure',title:'بازسازی',emoji:'🔄',time:'۳-۹ ماه',steps:8,checklistUrl:'module6.html',
+             stepsList:['تحلیل مالی','کاهش هزینه','مذاکره بدهی','برنامه بازسازی','فروش دارایی','جذب سرمایه','بازتعریف مدل','نظارت نقدینگی'],
+             description:'احیای مالی و تغییر مسیر'}
+        ];
+
+        const professionalChecklist = [
+            {id:'p1',text:'در حال حاضر، ایده شما در چه مرحله‌ای قرار دارد؟',options:[
+                {label:'فقط یک ایده ذهنی است',value:'ideation',weight:5},
+                {label:'نمونه اولیه ساخته شده',value:'startup',weight:3},
+                {label:'محصول نهایی و آماده فروش',value:'growth',weight:1}
+            ]},
+            {id:'p2',text:'وضعیت ثبت قانونی کسب‌وکارتان چگونه است؟',options:[
+                {label:'هنوز ثبت نشده',value:'ideation',weight:4},
+                {label:'ثبت شده اما بدون مجوز کامل',value:'startup',weight:3},
+                {label:'کاملاً قانونی و دارای مجوز',value:'maturity',weight:2}
+            ]},
+            {id:'p3',text:'تعداد مشتریان فعال و پرداخت‌کننده شما چند است؟',options:[
+                {label:'هنوز مشتری ندارم',value:'ideation',weight:5},
+                {label:'۱ تا ۱۰ مشتری',value:'startup',weight:4},
+                {label:'۱۱ تا ۵۰ مشتری',value:'growth',weight:3},
+                {label:'۵۰ تا ۲۰۰ مشتری',value:'expansion',weight:2},
+                {label:'بیش از ۲۰۰ مشتری',value:'maturity',weight:1}
+            ]},
+            {id:'p4',text:'درآمد ماهانه کسب‌وکار شما چقدر است؟',options:[
+                {label:'بدون درآمد',value:'ideation',weight:5},
+                {label:'زیر ۱۰ میلیون تومان',value:'startup',weight:4},
+                {label:'۱۰ تا ۵۰ میلیون تومان',value:'growth',weight:3},
+                {label:'۵۰ تا ۲۰۰ میلیون تومان',value:'expansion',weight:2},
+                {label:'بالای ۲۰۰ میلیون تومان',value:'maturity',weight:1},
+                {label:'کاهش شدید درآمد',value:'restructure',weight:4}
+            ]},
+            {id:'p5',text:'چند نفر در تیم شما مشغول به کار هستند؟',options:[
+                {label:'فقط خودم',value:'ideation',weight:5},
+                {label:'۲ تا ۵ نفر',value:'startup',weight:4},
+                {label:'۶ تا ۲۰ نفر',value:'growth',weight:3},
+                {label:'۲۰ تا ۵۰ نفر',value:'expansion',weight:2},
+                {label:'بیش از ۵۰ نفر',value:'maturity',weight:1}
+            ]},
+            {id:'p6',text:'آیا صورت‌های مالی (سود و زیان، ترازنامه) دارید؟',options:[
+                {label:'خیر، هیچ صورت مالی ندارم',value:'ideation',weight:5},
+                {label:'صورت‌های مالی ساده دارم',value:'startup',weight:4},
+                {label:'صورت‌های مالی منظم و حسابرسی‌شده',value:'expansion',weight:1},
+                {label:'صورت‌های مالی پیچیده با ERP',value:'maturity',weight:1}
+            ]},
+            {id:'p7',text:'آیا برنامه تأمین مالی برای ۶ ماه آینده دارید؟',options:[
+                {label:'هیچ برنامه‌ای ندارم',value:'ideation',weight:3},
+                {label:'به دنبال وام یا سرمایه‌گذار هستم',value:'startup',weight:3},
+                {label:'تأمین مالی از درآمد داخلی',value:'growth',weight:2},
+                {label:'دارای سرمایه‌گذار یا وام بانکی',value:'expansion',weight:1},
+                {label:'نیاز به بازسازی بدهی‌ها',value:'restructure',weight:5}
+            ]},
+            {id:'p8',text:'چه سطحی از کنترل داخلی و فرآیندهای مالی دارید؟',options:[
+                {label:'هیچ فرآیندی ندارم',value:'ideation',weight:5},
+                {label:'فرآیندهای ساده دستی',value:'startup',weight:4},
+                {label:'نرم‌افزار حسابداری و کنترل‌های پایه',value:'growth',weight:2},
+                {label:'سیستم‌های یکپارچه و حسابرسی داخلی',value:'maturity',weight:1}
+            ]},
+            {id:'p9',text:'آیا کسب‌وکار شما در حال گسترش به بازارهای جدید است؟',options:[
+                {label:'خیر، فقط یک بازار محلی',value:'ideation',weight:3},
+                {label:'در حال برنامه‌ریزی برای گسترش',value:'growth',weight:3},
+                {label:'در حال ورود به بازارهای جدید',value:'expansion',weight:5},
+                {label:'بازارهای متعدد و بین‌المللی',value:'maturity',weight:1}
+            ]},
+            {id:'p10',text:'اگر با بحران مالی مواجه هستید، علت اصلی آن چیست؟',options:[
+                {label:'هنوز بحرانی نیست',value:'ideation',weight:1},
+                {label:'کاهش فروش',value:'restructure',weight:4},
+                {label:'بدهی‌های سنگین',value:'restructure',weight:5},
+                {label:'مدیریت نقدینگی ضعیف',value:'restructure',weight:4},
+                {label:'تغییرات بازار',value:'expansion',weight:2}
+            ]}
+        ];
+
+        let modules = JSON.parse(localStorage.getItem(STORAGE_MODULES)) || defaultModules;
+        let checklist = professionalChecklist;
+        let diagnosticAnswers = {};
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.getElementById('themeToggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+            localStorage.setItem(STORAGE_THEME, theme);
+        }
+        function toggleTheme() {
+            const cur = document.documentElement.getAttribute('data-theme');
+            applyTheme(cur === 'dark' ? 'light' : 'dark');
+        }
+
+        function renderModules() {
+            document.getElementById('modulesGrid').innerHTML = modules.map(m => `
+                <div class="module-card" onclick="openRoadmap('${m.id}')">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="module-emoji">${m.emoji}</span>
+                        <span class="module-badge">${m.time}</span>
+                    </div>
+                    <div class="module-title">${m.title}</div>
+                    <div class="module-desc">${m.description}</div>
+                    <div class="module-meta"><span>⏱️ ${m.time}</span><span>📌 ${m.steps} گام</span></div>
+                    <div class="module-actions" onclick="event.stopPropagation();">
+                        ${m.checklistUrl && m.checklistUrl !== '#' ? `<a href="${m.checklistUrl}" class="checklist-btn" target="_blank">📋 چک‌لیست تشریحی</a>` : `<span class="checklist-btn" style="opacity:0.5;">📋 به‌زودی</span>`}
+                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openRoadmap('${m.id}')">🛣️ نقشه راه</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function generateRoadSVG(steps) {
+            const w=1200,h=400,roadY=280,roadWidth=140,startX=100,endX=w-100,spacing=(endX-startX)/(steps.length-1);
+            let svg=`<svg viewBox="0 0 ${w} ${h}"><defs><linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a2a3a"/><stop offset="100%" stop-color="#2c3e50"/></linearGradient><filter id="shadow"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.3"/></filter></defs><rect width="${w}" height="${h}" fill="url(#skyGrad)"/>`;
+            svg+=`<ellipse cx="150" cy="60" rx="50" ry="20" fill="#fff" opacity="0.2"/><ellipse cx="800" cy="80" rx="70" ry="25" fill="#fff" opacity="0.15"/>`;
+            svg+=`<rect x="${startX-20}" y="${roadY-roadWidth/2-10}" width="${endX-startX+40}" height="${roadWidth+20}" rx="20" fill="#2c3e50" stroke="#1a252f" stroke-width="2"/>`;
+            svg+=`<rect x="${startX}" y="${roadY-roadWidth/2}" width="${endX-startX}" height="${roadWidth}" fill="#34495e" rx="10"/>`;
+            svg+=`<line x1="${startX}" y1="${roadY}" x2="${endX}" y2="${roadY}" stroke="#f1c40f" stroke-width="4" stroke-dasharray="25 20"/>`;
+            svg+=`<line x1="${startX}" y1="${roadY-roadWidth/2+10}" x2="${endX}" y2="${roadY-roadWidth/2+10}" stroke="#fff" stroke-width="2"/>`;
+            svg+=`<line x1="${startX}" y1="${roadY+roadWidth/2-10}" x2="${endX}" y2="${roadY+roadWidth/2-10}" stroke="#fff" stroke-width="2"/>`;
+            [120,350,600,850,1080].forEach(tx=>svg+=`<g transform="translate(${tx},${roadY-roadWidth/2-30})"><rect x="-3" y="0" width="6" height="25" fill="#5d4037"/><polygon points="0,-35 -15,0 15,0" fill="#2e7d32"/><polygon points="0,-45 -12,-10 12,-10" fill="#2e7d32"/></g>`);
+            steps.forEach((step,i)=>{
+                const x=startX+i*spacing,y=roadY,col=i===0?'#27ae60':i===steps.length-1?'#e74c3c':'#f39c12';
+                svg+=`<g filter="url(#shadow)"><rect x="${x-12}" y="${y-60}" width="24" height="45" rx="6" fill="${col}" stroke="#fff" stroke-width="2"/><circle cx="${x}" cy="${y-65}" r="18" fill="${col}" stroke="#fff" stroke-width="3"/><text x="${x}" y="${y-58}" text-anchor="middle" fill="#fff" font-size="14">${i+1}</text><text x="${x}" y="${y-85}" text-anchor="middle" fill="#fff" font-size="10">${step}</text></g>`;
+                if(i<steps.length-1){const carX=x+spacing/2;svg+=`<g transform="translate(${carX},${y-20})"><rect x="-22" y="-10" width="44" height="20" rx="8" fill="#e74c3c"/><rect x="-15" y="-18" width="30" height="12" rx="4" fill="#c0392b"/><circle cx="-14" cy="10" r="7" fill="#222"/><circle cx="14" cy="10" r="7" fill="#222"/></g>`;}
+            });
+            svg+=`<text x="${startX-30}" y="${roadY-100}" fill="#f1c40f" font-weight="bold" font-size="16">🏁 شروع</text>`;
+            svg+=`<text x="${endX-30}" y="${roadY-100}" fill="#e74c3c" font-weight="bold" font-size="16">🏁 پایان</text></svg>`;
+            return svg;
+        }
+
+        function openRoadmap(moduleId) {
+            const mod = modules.find(m => m.id === moduleId);
+            if (!mod) return;
+            document.getElementById('roadmapTitle').textContent = `${mod.emoji} ${mod.title}`;
+            document.getElementById('roadSvg').innerHTML = generateRoadSVG(mod.stepsList);
+            document.getElementById('roadmapOverlay').classList.add('active');
+        }
+        function closeRoadmap() { document.getElementById('roadmapOverlay').classList.remove('active'); }
+
+        // ========== DIAGNOSTIC ==========
+        function renderDiagnostic() {
+            const container = document.getElementById('diagnosticQuestions');
+            container.innerHTML = checklist.map(q => `
+                <div style="margin-bottom:1.4rem;">
+                    <strong style="display:block; margin-bottom:0.5rem;">${q.text}</strong>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                        ${q.options.map((opt, i) => `
+                            <span class="option-pill" id="pill-${q.id}-${i}" onclick="selectDiagnostic('${q.id}', ${i})">${opt.label}</span>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+            Object.entries(diagnosticAnswers).forEach(([qid, idx]) => {
+                const pill = document.getElementById(`pill-${qid}-${idx}`);
+                if (pill) pill.classList.add('selected');
+            });
+        }
+
+        function selectDiagnostic(qid, idx) {
+            diagnosticAnswers[qid] = idx;
+            const question = checklist.find(q => q.id === qid);
+            question.options.forEach((_, i) => {
+                const pill = document.getElementById(`pill-${qid}-${i}`);
+                if (pill) pill.classList.toggle('selected', i === idx);
+            });
+            document.getElementById('submitDiagnostic').disabled = !checklist.every(q => diagnosticAnswers[q.id] !== undefined);
+        }
+
+        function submitDiagnostic() {
+            const scores = {}; modules.forEach(m => scores[m.id] = 0);
+            Object.entries(diagnosticAnswers).forEach(([qid, idx]) => {
+                const q = checklist.find(x => x.id === qid);
+                if (q) scores[q.options[idx].value] += q.options[idx].weight;
+            });
+            const bestId = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+            const bestModule = modules.find(m => m.id === bestId);
+
+            const resultDiv = document.getElementById('diagnosticResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="result-box">
+                    <h3 style="color:var(--gold);">✅ مرحله پیشنهادی شما</h3>
+                    <p style="font-size:1.3rem; font-weight:800; margin:0.5rem 0;">${bestModule.emoji} ${bestModule.title}</p>
+                    <p style="color:var(--text-muted);">${bestModule.description}</p>
+                    <p style="margin-top:0.5rem;"><strong>زمان تخمینی:</strong> ${bestModule.time}</p>
+                    <p><strong>تعداد گام‌ها:</strong> ${bestModule.steps}</p>
+                    <button class="btn btn-teal" onclick="openRoadmap('${bestModule.id}'); closeDiagnostic();">🛣️ مشاهده نقشه راه</button>
+                    <button class="btn btn-outline" onclick="printResult()" style="margin-right:0.5rem;">📥 ذخیره PDF</button>
+                </div>
+            `;
+            document.getElementById('diagnosticQuestions').style.display = 'none';
+            document.getElementById('submitDiagnostic').style.display = 'none';
+            document.getElementById('diagnosticTitle').textContent = 'نتیجه تشخیص مرحله';
+        }
+
+        function printResult() {
+            window.print();
+        }
+
+        function openDiagnostic() {
+            document.getElementById('diagnosticOverlay').classList.add('active');
+            diagnosticAnswers = {};
+            document.getElementById('diagnosticQuestions').style.display = 'block';
+            document.getElementById('submitDiagnostic').style.display = 'block';
+            document.getElementById('submitDiagnostic').disabled = true;
+            document.getElementById('diagnosticResult').style.display = 'none';
+            document.getElementById('diagnosticResult').innerHTML = '';
+            document.getElementById('diagnosticTitle').textContent = 'کدام مرحله مناسب شماست؟';
+            renderDiagnostic();
+        }
+        function closeDiagnostic() { document.getElementById('diagnosticOverlay').classList.remove('active'); }
+
+        // ====== CASE STUDIES ======
+        const STORAGE_CASE = 'case_studies';
+
+        function getCaseStudies() {
+            try { return JSON.parse(localStorage.getItem(STORAGE_CASE)) || []; } catch { return []; }
+        }
+
+        function loadCaseSelect() {
+            const select = document.getElementById('caseSelect');
+            const studies = getCaseStudies();
+            select.innerHTML = '<option value="">— انتخاب کنید —</option>' + 
+                studies.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
+            document.getElementById('caseDetail').innerHTML = '<p style="color:var(--text-muted);">یک مورد را انتخاب کنید.</p>';
+            if (studies.length === 0) {
+                document.getElementById('caseDetail').innerHTML = '<p style="color:var(--text-muted);">هیچ مطالعه موردی ثبت نشده است.</p>';
+            }
+        }
+
+        function showCaseDetail() {
+            const select = document.getElementById('caseSelect');
+            const id = select.value;
+            if (!id) {
+                document.getElementById('caseDetail').innerHTML = '<p style="color:var(--text-muted);">یک مورد را انتخاب کنید.</p>';
+                return;
+            }
+            const studies = getCaseStudies();
+            const item = studies.find(s => s.id == id);
+            if (!item) return;
+            document.getElementById('caseDetail').innerHTML = `
+                <div style="display:grid; gap:0.8rem;">
+                    <div><strong>🏢 کسب‌وکار:</strong> ${item.business}</div>
+                    <div><strong>⚠️ مشکل:</strong> ${item.problem}</div>
+                    <div><strong>✅ راه‌حل:</strong> ${item.solution}</div>
+                </div>
+            `;
+        }
+
+        function animateCounters() {
+            document.querySelectorAll('.counter-number').forEach(el => {
+                const target = +el.getAttribute('data-target'), step = target / 100;
+                let current = 0;
+                const timer = setInterval(() => {
+                    current += step;
+                    if (current >= target) { el.textContent = target; clearInterval(timer); }
+                    else el.textContent = Math.floor(current);
+                }, 20);
+            });
+        }
+        animateCounters();
+
+        document.getElementById('faqContainer').innerHTML = [
+            {q:'آیا چک‌لیست‌ها رایگان هستند؟',a:'بله، تمام چک‌لیست‌های تشریحی و تشخیصی کاملاً رایگان هستند.'},
+            {q:'چگونه می‌توانم سوالات را تغییر دهم؟',a:'با استفاده از پنل مدیریت (admin.html) می‌توانید سوالات و ماژول‌ها را شخصی‌سازی کنید.'},
+            {q:'آیا پاسخ‌های من ذخیره می‌شود؟',a:'بله، پاسخ‌ها در مرورگر شما ذخیره می‌شوند و می‌توانید بعداً ادامه دهید.'}
+        ].map(f => `<details class="faq-item"><summary>${f.q}</summary><p style="margin-top:0.5rem;">${f.a}</p></details>`).join('');
+
+        window.addEventListener('scroll', () => document.getElementById('backToTop').classList.toggle('show', window.scrollY > 500));
+        applyTheme(localStorage.getItem(STORAGE_THEME) || 'dark');
+        renderModules();
+        loadCaseSelect();
+
+        const canvas=document.getElementById('particles-canvas'),ctx=canvas.getContext('2d');
+        let particles=[];
+        function resizeCanvas(){canvas.width=innerWidth;canvas.height=innerHeight;}
+        resizeCanvas();window.addEventListener('resize',resizeCanvas);
+        class Particle{constructor(){this.reset();}reset(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.size=Math.random()*2+0.5;this.speedX=(Math.random()-0.5)*0.3;this.speedY=(Math.random()-0.5)*0.3;}update(){this.x+=this.speedX;this.y+=this.speedY;if(this.x<0||this.x>canvas.width)this.speedX*=-1;if(this.y<0||this.y>canvas.height)this.speedY*=-1;}draw(){ctx.fillStyle='rgba(212,168,83,0.15)';ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fill();}}
+        for(let i=0;i<60;i++)particles.push(new Particle());
+        function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);particles.forEach(p=>{p.update();p.draw();});requestAnimationFrame(animate);}
+        animate();
+    </script>
+</body>
+</html>
